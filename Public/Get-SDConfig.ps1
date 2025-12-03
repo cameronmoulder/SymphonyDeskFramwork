@@ -1,20 +1,28 @@
 function Get-SDConfig {
     param(
-        [Parameter(Mandatory)]
         [string]$Customer
     )
 
-    $configPath = "C:\SymphonyDesk\customers\$Customer\config\config.json"
-    $secretsPath = "C:\SymphonyDesk\customers\$Customer\config\secrets.json"
+    # Log that we're loading config
+    Write-SDLog "Get-SDConfig called for customer '$Customer'"
 
-    if (!(Test-Path $configPath)) { throw "Missing config.json for $Customer" }
-    if (!(Test-Path $secretsPath)) { throw "Missing secrets.json for $Customer" }
+    # --- OPTION A: use a per-customer JSON file (future) ---
+    $configRoot = "C:\SymphonyDesk\Framework\Config"
+    $configPath = Join-Path $configRoot "$Customer\config.json"
 
-    $config = Get-Content $configPath | ConvertFrom-Json
-    $secrets = Get-Content $secretsPath | ConvertFrom-Json
+    if (Test-Path $configPath) {
+        Write-SDLog "Loading config from $configPath"
+        $json = Get-Content $configPath -Raw | ConvertFrom-Json
+        return $json
+    }
 
-    return [PSCustomObject]@{
-        Config  = $config
-        Secrets = $secrets
+    # --- TEMP OPTION B: safe dummy config so runbooks don't crash ---
+    Write-SDLog "Config file not found at $configPath, returning dummy config for MVP"
+
+    return @{
+        Customer    = $Customer
+        TenantId    = "<dummy-tenant>"
+        ExchangeUrl = "https://dummy.exchange.local"
+        JiraUrl     = "https://dummy.jira.local"
     }
 }
